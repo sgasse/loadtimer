@@ -1,0 +1,10 @@
+[package]
+name = "loadtimer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.71"
+clap = { version = "4.2.7", features = ["derive"] }
+micromath = { version = "2.0.0", features = ["statistics"] }
+prettytable = "0.10.0"
