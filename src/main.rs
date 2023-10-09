@@ -6,29 +6,9 @@ use std::{
 use anyhow::{bail, Context, Result};
 
 use argh::FromArgs;
-// use clap::Parser;
 use micromath::statistics::{Mean, StdDev};
 use nix::unistd::SysconfVar;
 use prettytable::{row, Table};
-
-// #[derive(Parser)]
-// #[command(about, long_about = None)]
-// struct Cli {
-//     /// PID of process to monitor
-//     pids: Vec<usize>,
-
-//     /// Sample duration in seconds
-//     #[arg(short, long, default_value_t = 30)]
-//     sample_secs: u64,
-
-//     /// Break seconds
-//     #[arg(short, long, default_value_t = 0)]
-//     break_secs: u64,
-
-//     /// Number of sample points
-//     #[arg(short, long, default_value_t = 2)]
-//     num_samples: usize,
-// }
 
 #[derive(FromArgs)]
 /// Measure CPU usage of processes.
