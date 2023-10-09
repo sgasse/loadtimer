@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0.71"
 argh = "0.1.12"
 micromath = { version = "2.0.0", features = ["statistics"] }
-nix = { verison = "0.26.2", features = ["feature"] }
+nix = { version = "0.27.1", default-features = false, features = ["feature"] }
 prettytable = "0.10.0"
 
 [profile.release]

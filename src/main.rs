@@ -66,7 +66,7 @@ fn main() -> Result<()> {
         .iter()
         .map(|pid| format!("{pid}, {} samples, {}s", args.num_samples, args.sample_secs));
 
-    println!("");
+    println!();
     print_proc_metrics(&metrics, descriptions);
 
     Ok(())
@@ -147,7 +147,7 @@ fn sample_processes(args: &Cli, user_hz: i64) -> Result<Vec<ProcMetrics>> {
     // Turn user and system times into process metrics.
     Ok(utimes_per_pid_samples
         .into_iter()
-        .zip(stimes_per_pid_samples.into_iter())
+        .zip(stimes_per_pid_samples)
         .map(|(utimes, stimes)| {
             ProcMetrics::from_utimes_stimes(
                 utimes.as_slice(),
@@ -191,17 +191,15 @@ fn get_user_sys_time(pid: usize) -> Result<(u64, u64)> {
     let path = format!("/proc/{pid}/stat");
     let stat_data = fs::read_to_string(path)?;
 
-    let mut parts = stat_data.split(' ').into_iter().skip(13);
+    let mut parts = stat_data.split(' ').skip(13);
 
     let utime = parts
         .next()
-        .map(|v| v.parse::<u64>().ok())
-        .flatten()
+        .and_then(|v| v.parse::<u64>().ok())
         .context("failed to get utime")?;
     let stime = parts
         .next()
-        .map(|v| v.parse::<u64>().ok())
-        .flatten()
+        .and_then(|v| v.parse::<u64>().ok())
         .context("failed to get stime")?;
 
     Ok((utime, stime))
