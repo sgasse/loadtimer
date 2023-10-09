@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
-clap = { version = "4.2.7", features = ["derive"] }
+argh = "0.1.12"
 micromath = { version = "2.0.0", features = ["statistics"] }
 nix = { verison = "0.26.2", features = ["feature"] }
 prettytable = "0.10.0"

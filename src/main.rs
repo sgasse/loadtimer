@@ -5,32 +5,53 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 
-use clap::Parser;
+use argh::FromArgs;
+// use clap::Parser;
 use micromath::statistics::{Mean, StdDev};
 use nix::unistd::SysconfVar;
 use prettytable::{row, Table};
 
-#[derive(Parser)]
-#[command(about, long_about = None)]
+// #[derive(Parser)]
+// #[command(about, long_about = None)]
+// struct Cli {
+//     /// PID of process to monitor
+//     pids: Vec<usize>,
+
+//     /// Sample duration in seconds
+//     #[arg(short, long, default_value_t = 30)]
+//     sample_secs: u64,
+
+//     /// Break seconds
+//     #[arg(short, long, default_value_t = 0)]
+//     break_secs: u64,
+
+//     /// Number of sample points
+//     #[arg(short, long, default_value_t = 2)]
+//     num_samples: usize,
+// }
+
+#[derive(FromArgs)]
+/// Measure CPU usage of processes.
 struct Cli {
-    /// PID of process to monitor
+    /// pid of process to monitor
+    #[argh(positional)]
     pids: Vec<usize>,
 
-    /// Sample duration in seconds
-    #[arg(short, long, default_value_t = 30)]
+    /// sample duration in seconds
+    #[argh(option, short = 's', default = "30")]
     sample_secs: u64,
 
-    /// Break seconds
-    #[arg(short, long, default_value_t = 0)]
+    /// break seconds
+    #[argh(option, short = 'b', default = "0")]
     break_secs: u64,
 
-    /// Number of sample points
-    #[arg(short, long, default_value_t = 2)]
+    /// number of sample points
+    #[argh(option, short = 'n', default = "2")]
     num_samples: usize,
 }
 
 fn main() -> Result<()> {
-    let args = Cli::parse();
+    let args: Cli = argh::from_env();
     let user_hz = get_user_hz()?;
 
     println!("Benchmarking PIDs {:?}", args.pids);
