@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 
 use clap::Parser;
 use micromath::statistics::{Mean, StdDev};
@@ -46,7 +46,7 @@ fn main() -> Result<()> {
         .map(|pid| format!("{pid}, {} samples, {}s", args.num_samples, args.sample_secs));
 
     println!("");
-    ProcMetrics::print(&metrics, descriptions);
+    print_proc_metrics(&metrics, descriptions);
 
     Ok(())
 }
@@ -87,55 +87,18 @@ impl ProcMetrics {
             system_stddev,
         }
     }
-
-    fn print(proc_metrics: &[ProcMetrics], descriptions: impl Iterator<Item = String>) {
-        let mut table = Table::new();
-
-        use prettytable::format;
-
-        let format = format::FormatBuilder::new()
-            .column_separator('|')
-            .borders('|')
-            .padding(1, 1)
-            .build();
-        table.set_format(format);
-
-        table.add_row(row![
-            "Description",
-            "CPU usage %",
-            "total mean",
-            "utime mean",
-            "utime stddev",
-            "stime mean",
-            "stime stddev"
-        ]);
-
-        for (metric, description) in proc_metrics.iter().zip(descriptions) {
-            table.add_row(row![
-                r =>
-                description,
-                format!("{:.1}", metric.cpu_usage),
-                format!("{:.1}", metric.total_mean),
-                format!("{:.1}", metric.user_mean),
-                format!("{:.2}", metric.user_stddev),
-                format!("{:.1}", metric.system_mean),
-                format!("{:.2}", metric.system_stddev)
-            ]);
-        }
-
-        table.printstd();
-    }
 }
 
+/// Collect several samples of user and system time per process and calculate mean, stddev and CPU usage.
 fn sample_processes(args: &Cli, user_hz: i64) -> Result<Vec<ProcMetrics>> {
     if args.pids.is_empty() {
         bail!("no PIDs given");
     }
 
-    // Setup buffers.
-    let mut utimes = vec![Vec::with_capacity(args.num_samples); args.pids.len()];
-    let mut stimes = vec![Vec::with_capacity(args.num_samples); args.pids.len()];
-    let mut sample_times = Vec::with_capacity(args.num_samples);
+    // Setup buffers to store several samples of user and system time values per process.
+    let mut utimes_per_pid_samples = vec![Vec::with_capacity(args.num_samples); args.pids.len()];
+    let mut stimes_per_pid_samples = vec![Vec::with_capacity(args.num_samples); args.pids.len()];
+    let mut sample_durations = Vec::with_capacity(args.num_samples);
 
     let sample_duration = Duration::from_secs(args.sample_secs);
     let break_duration = Duration::from_secs(args.break_secs);
@@ -147,34 +110,35 @@ fn sample_processes(args: &Cli, user_hz: i64) -> Result<Vec<ProcMetrics>> {
         // Sort into vectors per PID.
         for (((utime, stime), utimes_per_pid), stimes_per_pid) in utime_stime_vec
             .into_iter()
-            .zip(utimes.iter_mut())
-            .zip(stimes.iter_mut())
+            .zip(utimes_per_pid_samples.iter_mut())
+            .zip(stimes_per_pid_samples.iter_mut())
         {
             utimes_per_pid.push(utime as f32);
             stimes_per_pid.push(stime as f32);
         }
 
-        sample_times.push(sample_time);
+        sample_durations.push(sample_time);
 
         // Wait specified time between samples.
         std::thread::sleep(break_duration);
     }
 
     // Turn user and system times into process metrics.
-    Ok(utimes
+    Ok(utimes_per_pid_samples
         .into_iter()
-        .zip(stimes.into_iter())
+        .zip(stimes_per_pid_samples.into_iter())
         .map(|(utimes, stimes)| {
             ProcMetrics::from_utimes_stimes(
                 utimes.as_slice(),
                 stimes.as_slice(),
-                sample_times.as_slice(),
+                sample_durations.as_slice(),
                 user_hz,
             )
         })
         .collect())
 }
 
+/// Sample user and system times for several processes in parallel.
 fn sample_user_sys_times(
     pids: &[usize],
     sample_duration: Duration,
@@ -201,20 +165,73 @@ fn sample_user_sys_times(
     Ok((utime_stime_vec, elapsed))
 }
 
+/// Extract the user time and system time value from `/proc/{pid}/stat`.
 fn get_user_sys_time(pid: usize) -> Result<(u64, u64)> {
     let path = format!("/proc/{pid}/stat");
     let stat_data = fs::read_to_string(path)?;
 
     let mut parts = stat_data.split(' ').into_iter().skip(13);
 
-    let utime = parts.next().map(|v| v.parse::<u64>().ok()).flatten();
-    let stime = parts.next().map(|v| v.parse::<u64>().ok()).flatten();
+    let utime = parts
+        .next()
+        .map(|v| v.parse::<u64>().ok())
+        .flatten()
+        .context("failed to get utime")?;
+    let stime = parts
+        .next()
+        .map(|v| v.parse::<u64>().ok())
+        .flatten()
+        .context("failed to get stime")?;
 
-    Ok((utime.unwrap(), stime.unwrap()))
+    Ok((utime, stime))
 }
 
+/// Get the `USER_HZ` constant, describing the number of jiffies.
+///
+/// The user and system time values reported in `/proc/{pid}/stat` no longer correspond to actual
+/// cycles but to virtual cycles. The constant `USER_HZ` describes how many virtual cycles there
+/// are in one second.
 fn get_user_hz() -> Result<i64> {
     nix::unistd::sysconf(SysconfVar::CLK_TCK)?.ok_or(anyhow::anyhow!(
         "Could not retreive USER_HZ / SC_CLK_TCK / jiffies"
     ))
+}
+
+/// Print a table view of process metrics with their descriptions.
+fn print_proc_metrics(proc_metrics: &[ProcMetrics], descriptions: impl Iterator<Item = String>) {
+    let mut table = Table::new();
+
+    use prettytable::format;
+
+    let format = format::FormatBuilder::new()
+        .column_separator('|')
+        .borders('|')
+        .padding(1, 1)
+        .build();
+    table.set_format(format);
+
+    table.add_row(row![
+        "Description",
+        "CPU usage %",
+        "total mean",
+        "utime mean",
+        "utime stddev",
+        "stime mean",
+        "stime stddev"
+    ]);
+
+    for (metric, description) in proc_metrics.iter().zip(descriptions) {
+        table.add_row(row![
+            r =>
+            description,
+            format!("{:.1}", metric.cpu_usage),
+            format!("{:.1}", metric.total_mean),
+            format!("{:.1}", metric.user_mean),
+            format!("{:.2}", metric.user_stddev),
+            format!("{:.1}", metric.system_mean),
+            format!("{:.2}", metric.system_stddev)
+        ]);
+    }
+
+    table.printstd();
 }
