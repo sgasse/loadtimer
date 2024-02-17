@@ -5,30 +5,10 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 
-use argh::FromArgs;
+use loadtimer::cli::Cli;
 use micromath::statistics::{Mean, StdDev};
 use nix::unistd::SysconfVar;
 use prettytable::{row, Table};
-
-#[derive(FromArgs)]
-/// Measure CPU usage of processes.
-struct Cli {
-    /// pid of process to monitor
-    #[argh(positional)]
-    pids: Vec<usize>,
-
-    /// sample duration in seconds
-    #[argh(option, short = 's', default = "30")]
-    sample_secs: u64,
-
-    /// break seconds
-    #[argh(option, short = 'b', default = "0")]
-    break_secs: u64,
-
-    /// number of sample points
-    #[argh(option, short = 'n', default = "2")]
-    num_samples: usize,
-}
 
 fn main() -> Result<()> {
     let args: Cli = argh::from_env();
