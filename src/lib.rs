@@ -1,3 +1,5 @@
+use std::fs;
+
 use anyhow::Result;
 use nix::unistd::SysconfVar;
 
@@ -15,4 +17,10 @@ pub fn get_user_hz() -> Result<i64> {
     nix::unistd::sysconf(SysconfVar::CLK_TCK)?.ok_or(anyhow::anyhow!(
         "failed to retreive USER_HZ / SC_CLK_TCK / jiffies"
     ))
+}
+
+/// Get the command behind a process.
+pub fn get_process_command(pid: usize) -> Result<String> {
+    let path = format!("/proc/{pid}/comm");
+    fs::read_to_string(path).map_err(Into::into)
 }

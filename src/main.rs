@@ -1,6 +1,7 @@
 use anyhow::Result;
 use loadtimer::{
-    cli::Cli, dump::print_proc_metrics, eval::ProcMetrics, get_user_hz, sample::Sampler,
+    cli::Cli, dump::print_proc_metrics, eval::ProcMetrics, get_process_command, get_user_hz,
+    sample::Sampler,
 };
 use std::time::Duration;
 
@@ -27,7 +28,7 @@ fn main() -> Result<()> {
     let descriptions = args
         .pids
         .iter()
-        .map(|pid| format!("{pid}, {} samples, {}s", args.num_samples, args.sample_secs));
+        .map(|pid| get_process_command(*pid).unwrap_or_else(|_| format!("PID {pid}")));
 
     println!();
     print_proc_metrics(&metrics, descriptions);

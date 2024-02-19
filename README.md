@@ -17,8 +17,8 @@ loadtimer -s 2 -b 0 -n 3 `pidof logd`
 Benchmarking PIDs [229]
 3 sample(s) of 60s
 
-| Description         | CPU usage % | total mean | utime mean | utime stddev | stime mean | stime stddev |
-| 229, 3 samples, 60s |         2.5 |        5.0 |        1.3 |         0.58 |        3.7 |         0.58 |
+| Description | CPU usage % | total mean | utime mean | utime stddev | stime mean | stime stddev |
+|        logd |         2.5 |        5.0 |        1.3 |         0.58 |        3.7 |         0.58 |
 ```
 
 If you want to build from source, e.g. for Android:
