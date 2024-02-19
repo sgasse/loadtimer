@@ -8,12 +8,8 @@ pub struct Cli {
     pub pids: Vec<usize>,
 
     /// sample duration in seconds
-    #[argh(option, short = 's', default = "30")]
+    #[argh(option, short = 's', default = "10")]
     pub sample_secs: u64,
-
-    /// break seconds
-    #[argh(option, short = 'b', default = "0")]
-    pub break_secs: u64,
 
     /// number of sample points
     #[argh(option, short = 'n', default = "2")]

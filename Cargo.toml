@@ -1,12 +1,11 @@
 [package]
 name = "loadtimer"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
 argh = "0.1.12"
-micromath = { version = "2.0.0", features = ["statistics"] }
 nix = { version = "0.27.1", default-features = false, features = ["feature"] }
 prettytable = "0.10.0"
 
