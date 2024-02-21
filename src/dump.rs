@@ -4,7 +4,7 @@ use crate::eval::ProcMetrics;
 
 /// Print a table view of process metrics with their descriptions.
 pub fn print_proc_metrics(
-    proc_metrics: &[ProcMetrics],
+    proc_metrics: impl Iterator<Item = ProcMetrics>,
     descriptions: impl Iterator<Item = String>,
 ) {
     let mut table = Table::new();
@@ -28,7 +28,7 @@ pub fn print_proc_metrics(
         "stime stddev"
     ]);
 
-    for (metric, description) in proc_metrics.iter().zip(descriptions) {
+    for (metric, description) in proc_metrics.zip(descriptions) {
         table.add_row(row![
             r =>
             description,

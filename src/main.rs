@@ -19,11 +19,10 @@ fn main() -> Result<()> {
         sampler.sample(sample_duration)?;
     }
 
-    let metrics: Vec<_> = sampler
+    let metrics = sampler
         .buffers()
         .iter()
-        .map(|buf| ProcMetrics::from_buffer(buf, user_hz))
-        .collect();
+        .map(|buf| ProcMetrics::from_buffer(buf, user_hz));
 
     let descriptions = args
         .pids
@@ -31,7 +30,7 @@ fn main() -> Result<()> {
         .map(|pid| get_process_command(*pid).unwrap_or_else(|_| format!("PID {pid}")));
 
     println!();
-    print_proc_metrics(&metrics, descriptions);
+    print_proc_metrics(metrics, descriptions);
 
     Ok(())
 }

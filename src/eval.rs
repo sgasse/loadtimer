@@ -7,21 +7,15 @@ pub struct MeanWithStdDev {
 }
 
 impl MeanWithStdDev {
-    /// Calculate mean and standard deviation from a vector.
-    pub fn from_vec(items: Vec<f64>) -> Self {
-        let n = items.len();
+    /// Calculate mean and standard deviation from an iterator.
+    pub fn from_clonable_iter(items: impl Iterator<Item = f64> + Clone) -> Self {
+        let (num_elements, sum) = items
+            .clone()
+            .fold((0, 0.0), |acc, x| (acc.0 + 1, acc.1 + x));
+        let mean = sum / num_elements as f64;
 
-        let mean = if n != 0 {
-            items.iter().sum::<f64>() / (n as f64)
-        } else {
-            f64::NAN
-        };
-
-        let stddev = if n != 0 {
-            f64::sqrt(items.iter().map(|v| f64::powi(v - mean, 2)).sum::<f64>() / n as f64)
-        } else {
-            f64::NAN
-        };
+        let stddev =
+            f64::sqrt(items.map(|x| f64::powi(x - mean, 2)).sum::<f64>() / num_elements as f64);
 
         Self { mean, stddev }
     }
@@ -37,25 +31,19 @@ pub struct ProcMetrics {
 
 impl ProcMetrics {
     pub fn from_buffer(buf: &Buffer, user_hz: f64) -> Self {
-        let user = MeanWithStdDev::from_vec(buf.buf.iter().map(|s| s.times.utime as f64).collect());
+        let user = MeanWithStdDev::from_clonable_iter(buf.buf.iter().map(|s| s.times.utime as f64));
         let system =
-            MeanWithStdDev::from_vec(buf.buf.iter().map(|s| s.times.stime as f64).collect());
-        let total = MeanWithStdDev::from_vec(
+            MeanWithStdDev::from_clonable_iter(buf.buf.iter().map(|s| s.times.stime as f64));
+        let total = MeanWithStdDev::from_clonable_iter(
             buf.buf
                 .iter()
-                .map(|s| (s.times.utime + s.times.stime) as f64)
-                .collect(),
+                .map(|s| (s.times.utime + s.times.stime) as f64),
         );
 
-        let sampled_usage: Vec<_> = buf
-            .buf
-            .iter()
-            .map(|s| {
-                ((s.times.utime + s.times.stime) as f64 / (user_hz * s.duration.as_secs_f64()))
-                    * 100.
-            })
-            .collect();
-        let cpu_usage = MeanWithStdDev::from_vec(sampled_usage);
+        let sampled_usage = buf.buf.iter().map(|s| {
+            ((s.times.utime + s.times.stime) as f64 / (user_hz * s.duration.as_secs_f64())) * 100.
+        });
+        let cpu_usage = MeanWithStdDev::from_clonable_iter(sampled_usage);
 
         Self {
             pid: buf.pid,
