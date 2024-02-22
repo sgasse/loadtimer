@@ -13,12 +13,12 @@ loadtimer -s 60 -n 3 `pidof logd`
 Example output:
 
 ```bash
-loadtimer -s 2 -b 0 -n 3 `pidof logd`
-Benchmarking PIDs [229]
-3 sample(s) of 60s
+loadtimer -s 10 -n 2 `pidof logd`
+Measuring CPU usage of PIDs [207]
+2 sample(s) of 10s
 
-| Description | CPU usage % | total mean | utime mean | utime stddev | stime mean | stime stddev |
-|        logd |         2.5 |        5.0 |        1.3 |         0.58 |        3.7 |         0.58 |
+| Process | CPU % | CPU % stddev | total mean | total stddev | utime mean | stime mean |
+|    logd |   1.7 |         0.15 |       17.5 |          1.5 |        1.5 |       16.0 |
 ```
 
 If you want to build from source, e.g. for Android:
@@ -31,15 +31,16 @@ Usage:
 
 ```
 > loadtimer --help
-Usage: loadtimer [<pids...>] [-s <sample-secs>] [-n <num-samples>]
+Usage: loadtimer [<pids...>] [-s <sample-secs>] [-n <num-samples>] [-i]
 
 Measure CPU usage of processes.
 
 Positional Arguments:
-  pids              pid of process to monitor
+  pids              PIDs of processes to measure
 
 Options:
   -s, --sample-secs sample duration in seconds
   -n, --num-samples number of sample points
+  -i, --interactive run in interactive mode
   --help            display usage information
 ```

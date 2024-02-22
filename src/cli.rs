@@ -14,4 +14,8 @@ pub struct Cli {
     /// number of sample points
     #[argh(option, short = 'n', default = "2")]
     pub num_samples: usize,
+
+    /// run in interactive mode
+    #[argh(switch, short = 'i')]
+    pub interactive: bool,
 }

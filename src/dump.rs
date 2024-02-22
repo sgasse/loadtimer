@@ -43,3 +43,8 @@ pub fn print_proc_metrics(
 
     table.printstd();
 }
+
+/// Clear the last n lines using ANSI escape sequences.
+pub fn clear_n_lines(n: usize) {
+    print!("\x1b[{}A", n);
+}

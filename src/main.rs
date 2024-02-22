@@ -1,6 +1,9 @@
 use anyhow::Result;
 use loadtimer::{
-    cli::Cli, dump::print_proc_metrics, eval::ProcMetrics, get_process_command, get_user_hz,
+    cli::Cli,
+    dump::{clear_n_lines, print_proc_metrics},
+    eval::ProcMetrics,
+    get_process_command, get_user_hz,
     sample::Sampler,
 };
 use std::time::Duration;
@@ -12,6 +15,14 @@ fn main() -> Result<()> {
     println!("Measuring CPU usage of PIDs {:?}", args.pids);
     println!("{} sample(s) of {}s", args.num_samples, args.sample_secs);
 
+    if args.interactive {
+        interactive(args, user_hz)
+    } else {
+        oneshot(args, user_hz)
+    }
+}
+
+fn oneshot(args: Cli, user_hz: f64) -> Result<()> {
     let sample_duration = Duration::from_secs(args.sample_secs);
     let mut sampler = Sampler::new(&args.pids, args.num_samples)?;
 
@@ -33,4 +44,32 @@ fn main() -> Result<()> {
     print_proc_metrics(metrics, descriptions);
 
     Ok(())
+}
+
+fn interactive(args: Cli, user_hz: f64) -> Result<()> {
+    let sample_duration = Duration::from_secs(args.sample_secs);
+    let mut sampler = Sampler::new(&args.pids, args.num_samples)?;
+
+    for _ in 0..args.num_samples {
+        sampler.sample(sample_duration)?;
+    }
+
+    let descriptions = args
+        .pids
+        .iter()
+        .map(|pid| get_process_command(*pid).unwrap_or_else(|_| format!("PID {pid}")));
+
+    println!();
+
+    loop {
+        let metrics = sampler
+            .buffers()
+            .iter()
+            .map(|buf| ProcMetrics::from_buffer(buf, user_hz));
+
+        print_proc_metrics(metrics, descriptions.clone());
+
+        sampler.sample(sample_duration)?;
+        clear_n_lines(args.pids.len() + 1);
+    }
 }
