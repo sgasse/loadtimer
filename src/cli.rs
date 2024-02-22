@@ -3,7 +3,7 @@ use argh::FromArgs;
 #[derive(FromArgs)]
 /// Measure CPU usage of processes.
 pub struct Cli {
-    /// pid of process to monitor
+    /// PIDs of processes to measure
     #[argh(positional)]
     pub pids: Vec<usize>,
 

@@ -9,7 +9,7 @@ fn main() -> Result<()> {
     let args: Cli = argh::from_env();
     let user_hz = get_user_hz()? as f64;
 
-    println!("Benchmarking PIDs {:?}", args.pids);
+    println!("Measuring CPU usage of PIDs {:?}", args.pids);
     println!("{} sample(s) of {}s", args.num_samples, args.sample_secs);
 
     let sample_duration = Duration::from_secs(args.sample_secs);

@@ -19,13 +19,13 @@ pub fn print_proc_metrics(
     table.set_format(format);
 
     table.add_row(row![
-        "Description",
-        "CPU usage %",
+        "Process",
+        "CPU %",
+        "CPU % stddev",
         "total mean",
+        "total stddev",
         "utime mean",
-        "utime stddev",
         "stime mean",
-        "stime stddev"
     ]);
 
     for (metric, description) in proc_metrics.zip(descriptions) {
@@ -33,11 +33,11 @@ pub fn print_proc_metrics(
             r =>
             description,
             format!("{:.1}", metric.cpu_usage.mean),
+            format!("{:.2}", metric.cpu_usage.stddev),
             format!("{:.1}", metric.total.mean),
+            format!("{:.1}", metric.total.stddev),
             format!("{:.1}", metric.user.mean),
-            format!("{:.2}", metric.user.stddev),
             format!("{:.1}", metric.system.mean),
-            format!("{:.2}", metric.system.stddev)
         ]);
     }
 
