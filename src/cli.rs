@@ -18,4 +18,8 @@ pub struct Cli {
     /// run in interactive mode
     #[argh(switch, short = 'i')]
     pub interactive: bool,
+
+    /// with threads
+    #[argh(switch, short = 't')]
+    pub with_threads: bool,
 }
