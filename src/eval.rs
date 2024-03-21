@@ -22,7 +22,6 @@ impl MeanWithStdDev {
 }
 
 pub struct ProcMetrics {
-    pub pid: usize,
     pub cpu_usage: MeanWithStdDev,
     pub total: MeanWithStdDev,
     pub user: MeanWithStdDev,
@@ -46,7 +45,6 @@ impl ProcMetrics {
         let cpu_usage = MeanWithStdDev::from_clonable_iter(sampled_usage);
 
         Self {
-            pid: buf.pid,
             cpu_usage,
             total,
             user,

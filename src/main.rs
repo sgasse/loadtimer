@@ -3,7 +3,7 @@ use loadtimer::{
     cli::Cli,
     dump::{clear_n_lines, print_proc_metrics},
     eval::ProcMetrics,
-    get_process_command, get_user_hz,
+    get_user_hz,
     sample::Sampler,
 };
 use std::time::Duration;
@@ -24,7 +24,7 @@ fn main() -> Result<()> {
 
 fn oneshot(args: Cli, user_hz: f64) -> Result<()> {
     let sample_duration = Duration::from_secs(args.sample_secs);
-    let mut sampler = Sampler::new(&args.pids, args.num_samples)?;
+    let mut sampler = Sampler::new(&args.pids, args.num_samples, args.with_threads)?;
 
     for _ in 0..args.num_samples {
         sampler.sample(sample_duration)?;
@@ -32,13 +32,8 @@ fn oneshot(args: Cli, user_hz: f64) -> Result<()> {
 
     let metrics = sampler
         .buffers()
-        .iter()
         .map(|buf| ProcMetrics::from_buffer(buf, user_hz));
-
-    let descriptions = args
-        .pids
-        .iter()
-        .map(|pid| get_process_command(*pid).unwrap_or_else(|_| format!("PID {pid}")));
+    let descriptions = sampler.buffers().map(|x| x.name.as_ref());
 
     println!();
     print_proc_metrics(metrics, descriptions);
@@ -48,26 +43,21 @@ fn oneshot(args: Cli, user_hz: f64) -> Result<()> {
 
 fn interactive(args: Cli, user_hz: f64) -> Result<()> {
     let sample_duration = Duration::from_secs(args.sample_secs);
-    let mut sampler = Sampler::new(&args.pids, args.num_samples)?;
+    let mut sampler = Sampler::new(&args.pids, args.num_samples, args.with_threads)?;
 
     for _ in 0..args.num_samples {
         sampler.sample(sample_duration)?;
     }
-
-    let descriptions = args
-        .pids
-        .iter()
-        .map(|pid| get_process_command(*pid).unwrap_or_else(|_| format!("PID {pid}")));
 
     println!();
 
     loop {
         let metrics = sampler
             .buffers()
-            .iter()
             .map(|buf| ProcMetrics::from_buffer(buf, user_hz));
+        let descriptions = sampler.buffers().map(|x| x.name.as_ref());
 
-        print_proc_metrics(metrics, descriptions.clone());
+        print_proc_metrics(metrics, descriptions);
 
         sampler.sample(sample_duration)?;
         clear_n_lines(args.pids.len() + 1);

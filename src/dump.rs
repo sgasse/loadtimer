@@ -1,15 +1,13 @@
-use prettytable::{row, Table};
+use prettytable::{format, row, Cell, Row, Table};
 
 use crate::eval::ProcMetrics;
 
 /// Print a table view of process metrics with their descriptions.
-pub fn print_proc_metrics(
+pub fn print_proc_metrics<'a>(
     proc_metrics: impl Iterator<Item = ProcMetrics>,
-    descriptions: impl Iterator<Item = String>,
+    descriptions: impl Iterator<Item = &'a str>,
 ) {
     let mut table = Table::new();
-
-    use prettytable::format;
 
     let format = format::FormatBuilder::new()
         .column_separator('|')
@@ -29,16 +27,17 @@ pub fn print_proc_metrics(
     ]);
 
     for (metric, description) in proc_metrics.zip(descriptions) {
-        table.add_row(row![
-            r =>
-            description,
-            format!("{:.1}", metric.cpu_usage.mean),
-            format!("{:.2}", metric.cpu_usage.stddev),
-            format!("{:.1}", metric.total.mean),
-            format!("{:.1}", metric.total.stddev),
-            format!("{:.1}", metric.user.mean),
-            format!("{:.1}", metric.system.mean),
-        ]);
+        let mut desc = Cell::new(description);
+        desc.align(format::Alignment::LEFT);
+        table.add_row(Row::new(vec![
+            desc,
+            right_aligned_cell(&format!("{:.2}", metric.cpu_usage.mean)),
+            right_aligned_cell(&format!("{:.2}", metric.cpu_usage.stddev)),
+            right_aligned_cell(&format!("{:.2}", metric.total.mean)),
+            right_aligned_cell(&format!("{:.2}", metric.total.stddev)),
+            right_aligned_cell(&format!("{:.2}", metric.user.mean)),
+            right_aligned_cell(&format!("{:.2}", metric.system.mean)),
+        ]));
     }
 
     table.printstd();
@@ -47,4 +46,10 @@ pub fn print_proc_metrics(
 /// Clear the last n lines using ANSI escape sequences.
 pub fn clear_n_lines(n: usize) {
     print!("\x1b[{}A", n);
+}
+
+fn right_aligned_cell(msg: &str) -> Cell {
+    let mut cell = Cell::new(msg);
+    cell.align(format::Alignment::RIGHT);
+    cell
 }
