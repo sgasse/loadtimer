@@ -91,6 +91,7 @@ struct ProcSampler {
     pid: usize,
     proc_buf: Buffer,
     thread_bufs: BTreeMap<usize, Buffer>,
+    with_threads: bool,
 }
 
 impl ProcSampler {
@@ -111,6 +112,7 @@ impl ProcSampler {
             pid,
             proc_buf,
             thread_bufs,
+            with_threads,
         })
     }
 
@@ -118,30 +120,32 @@ impl ProcSampler {
         // Sample main process
         self.proc_buf.sample(start)?;
 
-        // Find potentially new threads
-        let tids = get_threads(self.pid);
-        for tid in tids {
-            if let Entry::Vacant(e) = self.thread_bufs.entry(tid) {
-                if let Ok(buffer) =
-                    Buffer::from_pid_tid(self.pid, tid, self.proc_buf.buf.capacity())
-                {
-                    e.insert(buffer);
+        if self.with_threads {
+            // Find potentially new threads
+            let tids = get_threads(self.pid);
+            for tid in tids {
+                if let Entry::Vacant(e) = self.thread_bufs.entry(tid) {
+                    if let Ok(buffer) =
+                        Buffer::from_pid_tid(self.pid, tid, self.proc_buf.buf.capacity())
+                    {
+                        e.insert(buffer);
+                    }
                 }
             }
-        }
 
-        let mut pids_to_remove = vec![];
+            let mut pids_to_remove = vec![];
 
-        // Sample all threads
-        for (pid, buffer) in self.thread_bufs.iter_mut() {
-            if buffer.sample(start).is_err() {
-                pids_to_remove.push(*pid);
+            // Sample all threads
+            for (pid, buffer) in self.thread_bufs.iter_mut() {
+                if buffer.sample(start).is_err() {
+                    pids_to_remove.push(*pid);
+                }
             }
-        }
 
-        // Remove unreadable threads
-        for pid in pids_to_remove {
-            self.thread_bufs.remove(&pid);
+            // Remove unreadable threads
+            for pid in pids_to_remove {
+                self.thread_bufs.remove(&pid);
+            }
         }
 
         Ok(())

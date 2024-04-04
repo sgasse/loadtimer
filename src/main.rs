@@ -60,6 +60,6 @@ fn interactive(args: Cli, user_hz: f64) -> Result<()> {
         print_proc_metrics(metrics, descriptions);
 
         sampler.sample(sample_duration)?;
-        clear_n_lines(args.pids.len() + 1);
+        clear_n_lines(sampler.buffers().count() + 1);
     }
 }
