@@ -198,7 +198,7 @@ checksum = "ece97ea872ece730aed82664c424eb4c8291e1ff2480247ccf7409044bc6479f"
 
 [[package]]
 name = "loadtimer"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "argh",
